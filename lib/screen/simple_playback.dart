@@ -131,7 +131,6 @@ class _SimplePlaybackState extends State<SimplePlayback> {
 
   Future<void> _seek(Duration duration) async {
     await _mPlayer?.seekToPlayer(duration);
-    // await setPos(d.floor());
   }
 
   // --------------------- UI -------------------
