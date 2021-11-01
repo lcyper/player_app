@@ -66,6 +66,8 @@ class _SimplePlaybackState extends State<SimplePlayback> {
     FlutterSoundPlayer? flutterSoundPlayer =
         await _mPlayer!.openAudioSession(category: SessionCategory.playback);
     if (flutterSoundPlayer != null) {
+      await _play();
+      await _paused();
       setState(() {
         _mPlayerIsInited = true;
       });
@@ -110,6 +112,7 @@ class _SimplePlaybackState extends State<SimplePlayback> {
         fromURI: _exampleAudioFilePathMP3,
         codec: Codec.mp3,
         whenFinished: () {
+          _mPlayer!.stopPlayer();
           setState(() {});
         });
     setState(() {});
