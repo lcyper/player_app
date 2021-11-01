@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_sound_lite/flutter_sound.dart';
 import 'package:player_app/screen/simple_playback.dart';
 
 void main() {
@@ -38,17 +37,34 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SimplePlayback(),
-              ),
-            );
-          },
-          icon: const Icon(Icons.audiotrack_rounded),
-          label: Text('Play Audio'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SimplePlayback(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.audiotrack_rounded),
+              label: const Text('Play Audio'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (context) => const SimplePlayback(),
+                //   ),
+                // );
+              },
+              icon: const Icon(Icons.smart_display_rounded),
+              label: const Text('Play Video'),
+            ),
+          ],
         ),
       ),
     );
