@@ -144,7 +144,13 @@ class _SimplePlaybackState extends State<SimplePlayback> {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+    String twoDigitHours = twoDigits(duration.inHours);
+    // if (twoDigitMinutes == '00') {
+    //   return twoDigitSeconds;
+    // } else if (twoDigitHours == '00') {
+    //   return "$twoDigitMinutes:$twoDigitSeconds";
+    // }
+    return "$twoDigitHours:$twoDigitMinutes:$twoDigitSeconds";
   }
 
   @override
