@@ -33,8 +33,10 @@ import 'package:logger/logger.dart' show Level, Logger;
  *
  */
 
-final _exampleAudioFilePathMP3 =
-    'https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3';
+// final String _exampleAudioFilePathMP3 =
+//     'https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3';
+final String _exampleAudioFilePathMP3 =
+    'https://www.jasidutonline.com/wp-content/uploads/2021/10/Hacerse-cargo-y-salir-victorioso..mp3';
 
 ///
 typedef Fn = void Function();
@@ -70,16 +72,11 @@ class _SimplePlaybackState extends State<SimplePlayback> {
 
       _mPlayer!.setSubscriptionDuration(const Duration(milliseconds: 100));
       _mPlayerSubscription = _mPlayer!.onProgress!.listen((e) {
+        duration = e.duration;
+        progress = e.position;
         // setPos(e.position.inMilliseconds); //desfase de mas en el tiempo (otro archivo)
         setState(() {});
       });
-      // var value = await _mPlayer!.getProgress();
-      // print(value);
-      // print('---');
-      // progress = (await _mPlayer!.getProgress())['progress'] ?? Duration.zero;
-      // duration = (await _mPlayer!.getProgress())['duration'] ?? Duration.zero;
-      // _mPlayer?.setUIProgressBar();
-      // _mPlayer?.getProgress();
     }
   }
 
@@ -103,8 +100,8 @@ class _SimplePlaybackState extends State<SimplePlayback> {
 
   // -------  Here is the code to playback a remote file -----------------------
 
-  void _play() async {
-    if (_mPlayer != null && _mPlayer!.isPaused) {
+  Future<void> _play() async {
+    if (_mPlayer!.isPaused) {
       await _mPlayer!.resumePlayer();
       setState(() {});
       return;
@@ -118,7 +115,7 @@ class _SimplePlaybackState extends State<SimplePlayback> {
     setState(() {});
   }
 
-  void _paused() async {
+  Future<void> _paused() async {
     await _mPlayer?.pausePlayer();
     setState(() {});
   }
@@ -141,52 +138,70 @@ class _SimplePlaybackState extends State<SimplePlayback> {
       return null;
     }
     return _mPlayer!.isPlaying ? _paused : _play;
-    //  () {
+  }
 
-    //     _stopPlayer().then((value) => setState(() {}));
-    //   };
+  String _printDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget makeBody() {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        height: 100,
-        width: double.infinity,
-        alignment: Alignment.center,
-        color: Colors.white,
-        child: Row(
-          children: [
-            ElevatedButton(
-              onPressed: getPlaybackFn(),
-              child: Icon(!_mPlayer!.isPlaying
-                  ? Icons.play_arrow_rounded
-                  : Icons.pause), //Icons.stop_rounde
-            ),
-
-            Expanded(
-              child: Column(
-                children: [
-                  PlaybarSlider(_mPlayer!.onProgress!, _seek, null),
-                  Text('$progress/$duration'),
-                ],
-              ),
-            ),
-            // Text(_mPlayer!.isPlaying
-            //     ? 'Playback in progress'
-            //     : 'Player is stopped'),
-          ],
-        ),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: Colors.blue,
       appBar: AppBar(
         title: const Text('Simple Playback'),
       ),
-      body: makeBody(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_printDuration(progress)),
+                Text("-${_printDuration(duration - progress)}"),
+              ],
+            ),
+            PlaybarSlider(_mPlayer!.onProgress!, _seek, null),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  onPressed: () async {
+                    await _mPlayer
+                        ?.seekToPlayer(progress - const Duration(seconds: 10));
+                  },
+                  icon: const Icon(Icons.replay_10_rounded),
+                  color: Colors.redAccent,
+                  padding: EdgeInsets.zero,
+                  iconSize: 50,
+                ),
+                IconButton(
+                  onPressed: getPlaybackFn(),
+                  icon: Icon(
+                    !_mPlayer!.isPlaying
+                        ? Icons.play_arrow_rounded
+                        : Icons.pause,
+                  ),
+                  iconSize: 80,
+                ),
+                IconButton(
+                  onPressed: () async {
+                    await _mPlayer
+                        ?.seekToPlayer(progress + const Duration(seconds: 30));
+                  },
+                  icon: const Icon(Icons.forward_30_rounded),
+                  color: Colors.redAccent,
+                  padding: EdgeInsets.zero,
+                  iconSize: 50,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
