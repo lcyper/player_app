@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sound_lite/flutter_sound.dart';
 import 'package:flutter_sound_lite/public/flutter_sound_player.dart';
 // import 'package:flutter_sound/flutter_sound.dart';
+import 'package:logger/logger.dart' show Level, Logger;
 
 /*
  *
@@ -47,22 +48,45 @@ class SimplePlayback extends StatefulWidget {
 }
 
 class _SimplePlaybackState extends State<SimplePlayback> {
-  FlutterSoundPlayer? _mPlayer = FlutterSoundPlayer();
+  FlutterSoundPlayer? _mPlayer = FlutterSoundPlayer(logLevel: Level.warning);
   bool _mPlayerIsInited = false;
+  StreamSubscription? _mPlayerSubscription;
+  Duration progress = Duration.zero;
+  Duration duration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _mPlayer!.openAudioSession().then((value) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    FlutterSoundPlayer? flutterSoundPlayer =
+        await _mPlayer!.openAudioSession(category: SessionCategory.playback);
+    if (flutterSoundPlayer != null) {
       setState(() {
         _mPlayerIsInited = true;
       });
-    });
+
+      _mPlayer!.setSubscriptionDuration(const Duration(milliseconds: 100));
+      _mPlayerSubscription = _mPlayer!.onProgress!.listen((e) {
+        // setPos(e.position.inMilliseconds); //desfase de mas en el tiempo (otro archivo)
+        setState(() {});
+      });
+      // var value = await _mPlayer!.getProgress();
+      // print(value);
+      // print('---');
+      // progress = (await _mPlayer!.getProgress())['progress'] ?? Duration.zero;
+      // duration = (await _mPlayer!.getProgress())['duration'] ?? Duration.zero;
+      // _mPlayer?.setUIProgressBar();
+      // _mPlayer?.getProgress();
+    }
   }
 
   @override
   void dispose() {
-    stopPlayer();
+    _stopPlayer();
+    cancelPlayerSubscriptions();
     // Be careful : you must `close` the audio session when you have finished with it.
     _mPlayer!.closeAudioSession();
     _mPlayer = null;
@@ -70,9 +94,21 @@ class _SimplePlaybackState extends State<SimplePlayback> {
     super.dispose();
   }
 
+  void cancelPlayerSubscriptions() {
+    if (_mPlayerSubscription != null) {
+      _mPlayerSubscription!.cancel();
+      _mPlayerSubscription = null;
+    }
+  }
+
   // -------  Here is the code to playback a remote file -----------------------
 
-  void play() async {
+  void _play() async {
+    if (_mPlayer != null && _mPlayer!.isPaused) {
+      await _mPlayer!.resumePlayer();
+      setState(() {});
+      return;
+    }
     await _mPlayer!.startPlayer(
         fromURI: _exampleAudioFilePathMP3,
         codec: Codec.mp3,
@@ -82,10 +118,20 @@ class _SimplePlaybackState extends State<SimplePlayback> {
     setState(() {});
   }
 
-  Future<void> stopPlayer() async {
+  void _paused() async {
+    await _mPlayer?.pausePlayer();
+    setState(() {});
+  }
+
+  Future<void> _stopPlayer() async {
     if (_mPlayer != null) {
       await _mPlayer!.stopPlayer();
     }
+  }
+
+  Future<void> _seek(Duration duration) async {
+    await _mPlayer?.seekToPlayer(duration);
+    // await setPos(d.floor());
   }
 
   // --------------------- UI -------------------
@@ -94,47 +140,44 @@ class _SimplePlaybackState extends State<SimplePlayback> {
     if (!_mPlayerIsInited) {
       return null;
     }
-    return _mPlayer!.isStopped
-        ? play
-        : () {
-            stopPlayer().then((value) => setState(() {}));
-          };
+    return _mPlayer!.isPlaying ? _paused : _play;
+    //  () {
+
+    //     _stopPlayer().then((value) => setState(() {}));
+    //   };
   }
 
   @override
   Widget build(BuildContext context) {
     Widget makeBody() {
-      return Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.all(3),
-            padding: const EdgeInsets.all(3),
-            height: 80,
-            width: double.infinity,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Color(0xFFFAF0E6),
-              border: Border.all(
-                color: Colors.indigo,
-                width: 3,
+      return Container(
+        padding: const EdgeInsets.all(16),
+        height: 100,
+        width: double.infinity,
+        alignment: Alignment.center,
+        color: Colors.white,
+        child: Row(
+          children: [
+            ElevatedButton(
+              onPressed: getPlaybackFn(),
+              child: Icon(!_mPlayer!.isPlaying
+                  ? Icons.play_arrow_rounded
+                  : Icons.pause), //Icons.stop_rounde
+            ),
+
+            Expanded(
+              child: Column(
+                children: [
+                  PlaybarSlider(_mPlayer!.onProgress!, _seek, null),
+                  Text('$progress/$duration'),
+                ],
               ),
             ),
-            child: Row(children: [
-              ElevatedButton(
-                onPressed: getPlaybackFn(),
-                //color: Colors.white,
-                //disabledColor: Colors.grey,
-                child: Text(_mPlayer!.isPlaying ? 'Stop' : 'Play'),
-              ),
-              SizedBox(
-                width: 20,
-              ),
-              Text(_mPlayer!.isPlaying
-                  ? 'Playback in progress'
-                  : 'Player is stopped'),
-            ]),
-          ),
-        ],
+            // Text(_mPlayer!.isPlaying
+            //     ? 'Playback in progress'
+            //     : 'Player is stopped'),
+          ],
+        ),
       );
     }
 
