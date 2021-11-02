@@ -34,9 +34,10 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
-  # audio_video_progress_bar: ^0.9.0 #https://pub.dev/packages/audio_video_progress_bar
+  audio_video_progress_bar: ^0.9.0 #https://pub.dev/packages/audio_video_progress_bar
   #https://pub.dev/packages/just_audio
   flutter_sound_lite: ^8.4.1 #https://pub.dev/packages/flutter_sound_lite
+  video_player: ^2.2.6
 
 dev_dependencies:
   flutter_test:
