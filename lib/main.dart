@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:player_app/screen/simple_playback.dart';
+import 'package:player_app/screen/video_player_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -54,12 +55,12 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             ElevatedButton.icon(
               onPressed: () {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => const SimplePlayback(),
-                //   ),
-                // );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const VideoPlayerScreen(),
+                  ),
+                );
               },
               icon: const Icon(Icons.smart_display_rounded),
               label: const Text('Play Video'),
