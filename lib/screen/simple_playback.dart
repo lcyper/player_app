@@ -18,11 +18,10 @@
  */
 
 import 'dart:async';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_sound_lite/flutter_sound.dart';
 import 'package:just_audio/just_audio.dart';
 // import 'package:flutter_sound/flutter_sound.dart';
-import 'package:logger/logger.dart' show Level;
 
 /*
  *
@@ -53,8 +52,8 @@ class _SimplePlaybackState extends State<SimplePlayback> {
   // FlutterSoundPlayer? _player = FlutterSoundPlayer(logLevel: Level.warning);
   bool _playerIsInited = false;
   StreamSubscription? _playerSubscription;
-  Duration progress = Duration.zero;
-  Duration duration = Duration.zero;
+  Duration _progress = Duration.zero;
+  Duration _duration = Duration.zero;
   final AudioPlayer _player = AudioPlayer();
 
   @override
@@ -64,10 +63,17 @@ class _SimplePlaybackState extends State<SimplePlayback> {
   }
 
   Future<void> _init() async {
+    _player.positionStream.listen((Duration? position) {
+      _progress = position ?? _progress;
+      if (_duration == _progress) {
+        _paused();
+      }
+      setState(() {});
+    });
     StreamSubscription _playerSubscription =
         _player.playbackEventStream.listen((event) {
       // duration = event.duration ?? duration;
-      progress = event.updatePosition; //.position;
+      // _progress = event.bufferedPosition; //.position;
       // setState(() {});
     }, onError: (Object e, StackTrace stackTrace) {
       print('A stream error occurred: $e');
@@ -77,7 +83,7 @@ class _SimplePlaybackState extends State<SimplePlayback> {
       await _player.setUrl(_exampleAudioFilePathMP3);
 
       _player.load().then((Duration? value) {
-        duration = value ?? duration;
+        _duration = value ?? _duration;
         setState(() {
           _playerIsInited = true;
         });
@@ -108,17 +114,10 @@ class _SimplePlaybackState extends State<SimplePlayback> {
   @override
   void dispose() {
     _stopPlayer();
-    cancelPlayerSubscriptions();
+    _playerSubscription?.cancel();
     // Be careful : you must `close` the audio session when you have finished with it.
     _player.dispose();
     super.dispose();
-  }
-
-  void cancelPlayerSubscriptions() {
-    if (_playerSubscription != null) {
-      _playerSubscription!.cancel();
-      _playerSubscription = null;
-    }
   }
 
   // -------  Here is the code to playback a remote file -----------------------
@@ -138,6 +137,14 @@ class _SimplePlaybackState extends State<SimplePlayback> {
   }
 
   Future<void> _seek(Duration duration) async {
+    if (duration < Duration.zero) {
+      //no negativo
+      duration = Duration.zero;
+    } else if (duration > _duration) {
+      //no exedente
+      duration = _duration;
+      await _paused();
+    }
     await _player.seek(duration);
   }
 
@@ -173,21 +180,28 @@ class _SimplePlaybackState extends State<SimplePlayback> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_printDuration(progress)),
-                Text("-${_printDuration(duration - progress)}"),
-              ],
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //   children: [
+            //     Text(_printDuration(_progress)),
+            //     Text("-${_printDuration(_duration - _progress)}"),
+            //   ],
+            // ),
+            ProgressBar(
+              progress: _progress,
+              total: _duration,
+              onSeek: _seek,
+              timeLabelLocation: TimeLabelLocation.above,
+              timeLabelType: TimeLabelType.remainingTime,
+              timeLabelPadding: 10,
             ),
-            PlaybarSlider(_player.!.onProgress!, _seek, null),
+            // PlaybarSlider(_player.playbackEventStream, _seek, null),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
                   onPressed: () async {
-                    await _player
-                        ?.seekToPlayer(progress - const Duration(seconds: 10));
+                    await _seek(_progress - const Duration(seconds: 10));
                   },
                   icon: const Icon(Icons.replay_10_rounded),
                   color: Colors.redAccent,
@@ -197,16 +211,13 @@ class _SimplePlaybackState extends State<SimplePlayback> {
                 IconButton(
                   onPressed: getPlaybackFn(),
                   icon: Icon(
-                    !_player!.isPlaying
-                        ? Icons.play_arrow_rounded
-                        : Icons.pause,
+                    !_player.playing ? Icons.play_arrow_rounded : Icons.pause,
                   ),
                   iconSize: 80,
                 ),
                 IconButton(
                   onPressed: () async {
-                    await _player
-                        ?.seekToPlayer(progress + const Duration(seconds: 30));
+                    await _seek(_progress + const Duration(seconds: 30));
                   },
                   icon: const Icon(Icons.forward_30_rounded),
                   color: Colors.redAccent,
