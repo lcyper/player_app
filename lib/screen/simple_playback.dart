@@ -20,6 +20,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound_lite/flutter_sound.dart';
+import 'package:just_audio/just_audio.dart';
 // import 'package:flutter_sound/flutter_sound.dart';
 import 'package:logger/logger.dart' show Level;
 
@@ -49,36 +50,59 @@ class SimplePlayback extends StatefulWidget {
 }
 
 class _SimplePlaybackState extends State<SimplePlayback> {
-  FlutterSoundPlayer? _mPlayer = FlutterSoundPlayer(logLevel: Level.warning);
-  bool _mPlayerIsInited = false;
-  StreamSubscription? _mPlayerSubscription;
+  // FlutterSoundPlayer? _player = FlutterSoundPlayer(logLevel: Level.warning);
+  bool _playerIsInited = false;
+  StreamSubscription? _playerSubscription;
   Duration progress = Duration.zero;
   Duration duration = Duration.zero;
+  final AudioPlayer _player = AudioPlayer();
 
   @override
   void initState() {
-    super.initState();
     _init();
+    super.initState();
   }
 
   Future<void> _init() async {
-    FlutterSoundPlayer? flutterSoundPlayer =
-        await _mPlayer!.openAudioSession(category: SessionCategory.playback);
-    if (flutterSoundPlayer != null) {
-      await _play();
-      await _paused();
-      setState(() {
-        _mPlayerIsInited = true;
-      });
+    StreamSubscription _playerSubscription =
+        _player.playbackEventStream.listen((event) {
+      // duration = event.duration ?? duration;
+      progress = event.updatePosition; //.position;
+      // setState(() {});
+    }, onError: (Object e, StackTrace stackTrace) {
+      print('A stream error occurred: $e');
+    });
+    // Try to load audio from a source and catch any errors.
+    try {
+      await _player.setUrl(_exampleAudioFilePathMP3);
 
-      _mPlayer!.setSubscriptionDuration(const Duration(milliseconds: 100));
-      _mPlayerSubscription = _mPlayer!.onProgress!.listen((e) {
-        duration = e.duration;
-        progress = e.position;
-        // setPos(e.position.inMilliseconds); //desfase de mas en el tiempo (otro archivo)
-        setState(() {});
+      _player.load().then((Duration? value) {
+        duration = value ?? duration;
+        setState(() {
+          _playerIsInited = true;
+        });
       });
+    } catch (e) {
+      print("Error loading audio source: $e");
     }
+
+    // FlutterSoundPlayer? flutterSoundPlayer =
+    //     await _mPlayer!.openAudioSession(category: SessionCategory.playback);
+    // if (flutterSoundPlayer != null) {
+    //   await _play();
+    //   await _paused();
+    //   setState(() {
+    //     _mPlayerIsInited = true;
+    //   });
+
+    //   _mPlayer!.setSubscriptionDuration(const Duration(milliseconds: 100));
+    //   _mPlayerSubscription = _mPlayer!.onProgress!.listen((e) {
+    //     duration = e.duration;
+    //     progress = e.position;
+    //     // setPos(e.position.inMilliseconds); //desfase de mas en el tiempo (otro archivo)
+    //     setState(() {});
+    //   });
+    // }
   }
 
   @override
@@ -86,59 +110,44 @@ class _SimplePlaybackState extends State<SimplePlayback> {
     _stopPlayer();
     cancelPlayerSubscriptions();
     // Be careful : you must `close` the audio session when you have finished with it.
-    _mPlayer!.closeAudioSession();
-    _mPlayer = null;
-
+    _player.dispose();
     super.dispose();
   }
 
   void cancelPlayerSubscriptions() {
-    if (_mPlayerSubscription != null) {
-      _mPlayerSubscription!.cancel();
-      _mPlayerSubscription = null;
+    if (_playerSubscription != null) {
+      _playerSubscription!.cancel();
+      _playerSubscription = null;
     }
   }
 
   // -------  Here is the code to playback a remote file -----------------------
 
   Future<void> _play() async {
-    if (_mPlayer!.isPaused) {
-      await _mPlayer!.resumePlayer();
-      setState(() {});
-      return;
-    }
-    await _mPlayer!.startPlayer(
-        fromURI: _exampleAudioFilePathMP3,
-        codec: Codec.mp3,
-        whenFinished: () {
-          _mPlayer!.stopPlayer();
-          setState(() {});
-        });
+    await _player.play();
     setState(() {});
   }
 
   Future<void> _paused() async {
-    await _mPlayer?.pausePlayer();
+    await _player.pause();
     setState(() {});
   }
 
   Future<void> _stopPlayer() async {
-    if (_mPlayer != null) {
-      await _mPlayer!.stopPlayer();
-    }
+    await _player.stop();
   }
 
   Future<void> _seek(Duration duration) async {
-    await _mPlayer?.seekToPlayer(duration);
+    await _player.seek(duration);
   }
 
   // --------------------- UI -------------------
 
   Fn? getPlaybackFn() {
-    if (!_mPlayerIsInited) {
+    if (!_playerIsInited) {
       return null;
     }
-    return _mPlayer!.isPlaying ? _paused : _play;
+    return _player.playing ? _paused : _play;
   }
 
   String _printDuration(Duration duration) {
@@ -171,13 +180,13 @@ class _SimplePlaybackState extends State<SimplePlayback> {
                 Text("-${_printDuration(duration - progress)}"),
               ],
             ),
-            PlaybarSlider(_mPlayer!.onProgress!, _seek, null),
+            PlaybarSlider(_player.!.onProgress!, _seek, null),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
                   onPressed: () async {
-                    await _mPlayer
+                    await _player
                         ?.seekToPlayer(progress - const Duration(seconds: 10));
                   },
                   icon: const Icon(Icons.replay_10_rounded),
@@ -188,7 +197,7 @@ class _SimplePlaybackState extends State<SimplePlayback> {
                 IconButton(
                   onPressed: getPlaybackFn(),
                   icon: Icon(
-                    !_mPlayer!.isPlaying
+                    !_player!.isPlaying
                         ? Icons.play_arrow_rounded
                         : Icons.pause,
                   ),
@@ -196,7 +205,7 @@ class _SimplePlaybackState extends State<SimplePlayback> {
                 ),
                 IconButton(
                   onPressed: () async {
-                    await _mPlayer
+                    await _player
                         ?.seekToPlayer(progress + const Duration(seconds: 30));
                   },
                   icon: const Icon(Icons.forward_30_rounded),
