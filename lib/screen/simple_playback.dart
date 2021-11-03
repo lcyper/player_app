@@ -20,9 +20,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound_lite/flutter_sound.dart';
-import 'package:flutter_sound_lite/public/flutter_sound_player.dart';
 // import 'package:flutter_sound/flutter_sound.dart';
-import 'package:logger/logger.dart' show Level, Logger;
+import 'package:logger/logger.dart' show Level;
 
 /*
  *
@@ -35,7 +34,7 @@ import 'package:logger/logger.dart' show Level, Logger;
 
 // final String _exampleAudioFilePathMP3 =
 //     'https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3';
-final String _exampleAudioFilePathMP3 =
+const String _exampleAudioFilePathMP3 =
     'https://www.jasidutonline.com/wp-content/uploads/2021/10/Hacerse-cargo-y-salir-victorioso..mp3';
 
 ///

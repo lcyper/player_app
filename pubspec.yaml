@@ -37,6 +37,8 @@ dependencies:
   # audio_video_progress_bar: ^0.9.0 #https://pub.dev/packages/audio_video_progress_bar
   #https://pub.dev/packages/just_audio
   flutter_sound_lite: ^8.4.1 #https://pub.dev/packages/flutter_sound_lite
+  just_audio: ^0.9.15
+  audio_session: ^0.1.6+1
 
 dev_dependencies:
   flutter_test:
